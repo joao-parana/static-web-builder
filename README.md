@@ -20,30 +20,57 @@ Teste assim:
 
     golang-tip-to-run-as-a-shell-script TESTE
 
-Agora criando o projeto:
+Com isso você poderá testar o programa **server.go** no seu host como se fosse um shell script
 
-    cd ~/Desktop
+Rode no Terminal, para criar o executável para o Debian :
+
+    docker build -t parana/static-web-builder . 
+    docker run -v ~/Desktop/Development/static-web-builder/www:/www \
+           parana/static-web-builder 
+
+Agora criando o projeto que vai usar este executável:
+
+    cd ~/Desktop/Development
     mkdir static-web
     cd static-web
     touch Dockerfile
     subl -a . 
 
-Run this command on Terminal, to build a binary for Debian :
+Coloque o conteúdo abaixo no arquivo Dockerfile e salve.
 
-    docker build -t parana/static-web-builder -f Dockerfile.DEV . && \
-           docker run  -v ~/Desktop/Development/projeto-golang/martini/www:/www \
-           parana/static-web-builder
+    FROM busybox:ubuntu-14.04
+    MAINTAINER João Antonio Ferreira "joao.parana@gmail.com"
+    ENV REFRESHED_AT 2015-07-24
+    RUN mkdir /www
+    ADD https://github.com/joao-parana/static-web-builder/raw/master/www/martini-debian-64 /www/martini-debian-64
+    RUN chmod a+rx /www/martini-debian-64 && ls -lAt /www
+    VOLUME ["/www/public"]
+    EXPOSE 3000
+    WORKDIR /www 
+    ENTRYPOINT ["/www/martini-debian-64"]
 
-Para fazer o build para produção:
+Substitua os dados referentes a MAINTAINER, colocando seu nome e e-mail.
 
+Para fazer o build para produção use outro projeto, por exemplo:
+
+    cd ~/Desktop/Development
+    cd static-web
     docker build -t parana/static-web .
 
 Ou build e RUN com:
 
-    docker build -t parana/static-web . && \
-           docker run --rm -v ~/Desktop/Development/projeto-golang/martini/www:/www \
-           -p 3030:3000 \
+    docker build -t parana/static-web . 
+    mkdir -p ~/Desktop/Development/static-web/www/public 
+    docker run --rm \
+           -v ~/Desktop/Development/static-web/www/public:/www/public \
+           -p 3000:3000 \
            parana/static-web
+
+Teste o site
+
+    cd ~/Desktop/Development/static-web/www/public/
+    echo 'Oi usuário do meu site' > index.html
+    open http://$(docker-ip):3000
 
 Crie uma conta no http://github.com gratuitamente
 
@@ -55,6 +82,7 @@ execute:
     git init
     git add .
     git commit -m "Primeiro Commit"
+    # Substitua joao-parana por seu ID no GitHub
     git remote add origin https://github.com/joao-parana/static-web.git
     git push -u origin master
 
